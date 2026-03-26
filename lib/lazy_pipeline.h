@@ -82,6 +82,11 @@ public:
   auto end() const {
     return Access.cend();
   }
+
+  template <typename Adapt>
+  auto operator|(Adapt adapter) {
+    return adapter.Apply(*this);
+  }
 private:
   std::shared_ptr<Data> data_;
 };
