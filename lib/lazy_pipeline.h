@@ -87,6 +87,16 @@ public:
   auto operator|(Adapt adapter) {
     return adapter.Apply(*this);
   }
+
+  std::function<Contrainer&()> State() const {
+    auto& data_ptr = data_;
+    auto& parent_inv = data_ptr->parent_invoke;
+    return Container& [data_ptr, parent_inv]() {
+      parent_inv();
+      return data_ptr->Access();
+    }
+  }
+
 private:
   std::shared_ptr<Data> data_;
 };
