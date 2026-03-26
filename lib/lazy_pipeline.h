@@ -16,17 +16,17 @@ private:
       using Container = C<T, Args...>;
     }
     using Func = std::function<void>(C&);
-    Data(const Func& func) : cont_prt_(new Container{}), func_ptr_(std::make_unique<Func>(func)), owner_(true) {}
+    Data(const Func& func) : cont_ptr_(new Container{}), func_ptr_(std::make_unique<Func>(func)), IsOwner_(true) {}
     Data(Container& c) : cont_ptr_(&c) {}
     ~Data() {
-      if (owner_) {
+      if (IsOwner_) {
         delete cont_prt_;
       }
     }
   private:
-    Container* cont_prt_;
+    Container* cont_ptr_;
     std::unique_ptr<Func> func_ptr_;
-    bool owner_;
+    bool IsOwner_;
   }
 private:
   std::shared_ptr<Data> data_;
