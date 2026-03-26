@@ -17,6 +17,8 @@ private:
     }
     using Func = std::function<void>(C&);
 
+    std::function<void()> parent_invoke = [](){};
+
     Data(const Func& func) : cont_ptr_(new Container{}), func_ptr_(std::make_unique<Func>(func)), IsOwner_(true) {}
     Data(Container& c) : cont_ptr_(&c) {}
     ~Data() {
@@ -25,15 +27,15 @@ private:
       }
     }
 
-    void evaluate() {
+    void Evaluate() {
       if (func_ptr_) {
         func_ptr_->operator()(*cont_ptr_);
         func_ptr_.reset();
       }
     }
 
-    Container& Accsess(){
-      evaluate();
+    Container& Access(){
+      Evaluate();
       return *cont_ptr;
     }
   private:
@@ -55,7 +57,31 @@ public:
   requires std::same_as<const Cont, Contrainer>
   LazyPipeline(const Cont& c) : data_(std::make_shared<Data>(c)) {}
 
+  const Contrainer& Access() const {
+    data_->parent_invoke();
+    return data_->Access();
+  }
 
+  std::function<void()> invoker() const {
+    auto& data_ptr = data_;
+    return [data_ptr]() {data_ptr->Access()};
+  }
+
+  auto begin() {
+    return Access.begin();
+  }
+  
+  auto end() {
+    return Access.end();
+  }
+
+  auto begin() const {
+    return Access.cbegin();
+  }
+
+  auto end() const {
+    return Access.cend();
+  }
 private:
   std::shared_ptr<Data> data_;
 };
