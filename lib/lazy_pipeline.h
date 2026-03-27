@@ -4,6 +4,8 @@
 #include <functional>
 #include <string>
 
+#include "traits.h"
+
 template <typename T, template <typename, typename...> typename C, typename ...Args>
 class LazyPipeline {
 private:
@@ -44,6 +46,16 @@ private:
     bool IsOwner_;
   };
 
+  template <typename U, template <typename, typename...> typename C2, typename ...Args2>
+  struct RebindingStruct {
+    using Type = Traits<C2, U>::template ToNewPipeline<Args2...>;
+  };
+
+  template <typename U>
+  struct RebindingStruct<U, SameCont> {
+    using Type = Traits<C, U>::template ToNewPipeline<Args...>;
+  };
+
 public:
   using Type = Data::Type;
   using value_type = Type;
@@ -56,6 +68,9 @@ public:
   template <typename Cont>
   requires std::same_as<const Cont, Contrainer>
   LazyPipeline(const Cont& c) : data_(std::make_shared<Data>(c)) {}
+
+  template <typename U, template <typename, typename ...> typename C2, typename ...Args2>
+  using Rebind = RebindingStruct<U, C2, Args2...>::Type;
 
   const Contrainer& Access() const {
     data_->parent_invoke();
