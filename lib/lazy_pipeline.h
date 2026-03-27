@@ -123,6 +123,14 @@ public:
   void ParentDerived(std::function<void()> inv) {
     data->parent_invoke = inv;
   }
+
+  template <typename U, template <typename, typename ...> typename C2, typename ...Args2>
+  auto Make(const NextFunc<Rebind<U, C2, Args2...>& convert) {
+    auto getter = State();
+    auto next_flow = Rebind<U, C2, Args2...>([getter, convert](auto& next_cont) {convert(getter(), next_cont);});
+    ParentDerived(next_flow);
+    return next_flow;
+  }
 private:
   std::shared_ptr<Data> data_;
 };
