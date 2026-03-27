@@ -72,6 +72,9 @@ public:
   template <typename U, template <typename, typename ...> typename C2, typename ...Args2>
   using Rebind = RebindingStruct<U, C2, Args2...>::Type;
 
+  template <typename NextFlow>
+  using NextFunc = std::function<void(Contrainer&, typename::NextFlow::Container&)>;
+
   const Contrainer& Access() const {
     data_->parent_invoke();
     return data_->Access();
