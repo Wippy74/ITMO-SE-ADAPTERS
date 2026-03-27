@@ -97,6 +97,14 @@ public:
     }
   }
 
+  template <typename NextFlow>
+  void ParentDerived(NextFlow f) {
+    data_->parent_invoke = f.invoke();
+  }
+
+  void ParentDerived(std::function<void()> inv) {
+    data->parent_invoke = inv;
+  }
 private:
   std::shared_ptr<Data> data_;
 };
