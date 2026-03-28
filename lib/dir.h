@@ -14,12 +14,12 @@ auto Dir(std::filesystem::path dir_path, bool is_recursive) {
   using Flow = LazyPipeline<std::filesystem::path, Container, Args...>;
 
   return Flow([is_recursive, dir_path](typename Flow::Container& output) {
-                      if (is_recursive) {
-                        output = typename Flow::Container(std::filesystem::recursive_directory_iterator(dir_path),
-                                                          std::filesystem::recursive_directory_iterator());
-                      } else {
-                        output = typename Flow::Container(std::filesystem::directory_iterator(dir_path), 
-                                                          std::filesystem::directory_iterator());
-                      }
-                  });
+              if (is_recursive) {
+                output = typename Flow::Container(std::filesystem::recursive_directory_iterator(dir_path),
+                                                  std::filesystem::recursive_directory_iterator());
+              } else {
+                output = typename Flow::Container(std::filesystem::directory_iterator(dir_path), 
+                                                  std::filesystem::directory_iterator());
+              }
+  });
 }
