@@ -10,14 +10,22 @@ template <typename T, template <typename, typename...> typename C, typename ...A
 class LazyPipeline {
 private:
   class Data {
+  private:
+    template <typename TValue2>
+		struct ContainerType{
+			using Type = C<T, Args...>;
+		};
+
+		template <typename U> 
+		requires std::same_as<U, const std::remove_const_t<U>>
+		struct ContainerType<U>{
+			using Type = const C<std::remove_const_t<U>, Args...>;
+		};
+
   public:
     using Type = T;
-    if constexpr (std::is_const<T>) {
-      using Container = const C<std::remove_const_t<T>, Args...>;
-    } else {
-      using Container = C<T, Args...>;
-    }
-    using Func = std::function<void>(C&);
+    using Container = ContainerType<T>::Type;
+    using Func = std::function<void(Container&)>;
 
     std::function<void()> parent_invoke = [](){};
 
@@ -25,7 +33,7 @@ private:
     Data(Container& c) : cont_ptr_(&c) {}
     ~Data() {
       if (IsOwner_) {
-        delete cont_prt_;
+        delete cont_ptr_;
       }
     }
 
@@ -38,7 +46,7 @@ private:
 
     Container& Access(){
       Evaluate();
-      return *cont_ptr;
+      return *cont_ptr_;
     }
   private:
     Container* cont_ptr_;
@@ -59,46 +67,46 @@ private:
 public:
   using Type = Data::Type;
   using value_type = Type;
-  using Contrainer = Data::Container;
+  using Container = Data::Container;
 
-  LazyPipeline() : LazyPipeline(Contrainer{}) {}
+  LazyPipeline() : LazyPipeline(Container{}) {}
 
   LazyPipeline(const Data::Func& func) : data_(std::make_shared<Data>(func)) {}
 
   template <typename Cont>
-  requires std::same_as<const Cont, Contrainer>
+  requires std::same_as<const Cont, Container>
   LazyPipeline(const Cont& c) : data_(std::make_shared<Data>(c)) {}
 
   template <typename U, template <typename, typename ...> typename C2, typename ...Args2>
   using Rebind = RebindingStruct<U, C2, Args2...>::Type;
 
   template <typename NextFlow>
-  using NextFunc = std::function<void(Contrainer&, typename::NextFlow::Container&)>;
+  using NextFunc = std::function<void(Container&, typename NextFlow::Container&)>;
 
-  const Contrainer& Access() const {
+  const Container& Access() const {
     data_->parent_invoke();
     return data_->Access();
   }
 
   std::function<void()> invoker() const {
     auto& data_ptr = data_;
-    return [data_ptr]() {data_ptr->Access()};
+    return [data_ptr]() {data_ptr->Access();};
   }
 
   auto begin() {
-    return Access.begin();
+    return Access().begin();
   }
   
   auto end() {
-    return Access.end();
+    return Access().end();
   }
 
   auto begin() const {
-    return Access.cbegin();
+    return Access().cbegin();
   }
 
   auto end() const {
-    return Access.cend();
+    return Access().cend();
   }
 
   template <typename Adapt>
@@ -106,26 +114,26 @@ public:
     return adapter.Apply(*this);
   }
 
-  std::function<Contrainer&()> State() const {
+  std::function<Container&()> State() const {
     auto& data_ptr = data_;
     auto& parent_inv = data_ptr->parent_invoke;
-    return Container& [data_ptr, parent_inv]() {
+    return [data_ptr, parent_inv]() -> Container&{
       parent_inv();
       return data_ptr->Access();
-    }
+    };
   }
 
   template <typename NextFlow>
   void ParentDerived(NextFlow f) {
-    data_->parent_invoke = f.invoke();
+    data_->parent_invoke = f.invoker();
   }
 
   void ParentDerived(std::function<void()> inv) {
-    data->parent_invoke = inv;
+    data_->parent_invoke = inv;
   }
 
   template <typename U, template <typename, typename ...> typename C2, typename ...Args2>
-  auto Make(const NextFunc<Rebind<U, C2, Args2...>& convert) {
+  auto Make(const NextFunc<Rebind<U, C2, Args2...>>& convert) {
     auto getter = State();
     auto next_flow = Rebind<U, C2, Args2...>([getter, convert](auto& next_cont) {convert(getter(), next_cont);});
     ParentDerived(next_flow);

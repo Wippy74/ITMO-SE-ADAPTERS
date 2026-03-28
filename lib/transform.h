@@ -7,6 +7,8 @@
 
 template <typename Function, template <typename, typename...> typename C, typename... Args>
 class TransformAdapter {
+private:
+  Function transform_func_; 
 public:
   TransformAdapter(const Function& func) : transform_func_(func) {}
 
@@ -22,8 +24,6 @@ public:
                                                                                             func);
                                                                             });
   }
-private:
-  Function transform_func_; 
 };
 
 template <template <typename, typename...> typename C = SameCont, typename... Args, typename Function>

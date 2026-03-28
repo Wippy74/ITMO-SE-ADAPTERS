@@ -19,7 +19,7 @@ private:
     AggregateFunc aggregate_func_;
     KeyExtractor extract_key_;
   public:
-    KeyIndexMap(AggregateByKeyAdapter& parent) : init_val_(parent.initial_value_), aggregate_func_(parent.aggregate_func_), 
+    KeyIndexMap(AggregateByKeyAdapter& parent) : init_val_(parent.init_val_), aggregate_func_(parent.aggregate_func_), 
                                                  extract_key_(parent.extract_key_) {}
     template <typename TargetContainer>
     void Aggregate(TargetContainer& container, Value& value) {

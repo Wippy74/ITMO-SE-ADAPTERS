@@ -12,7 +12,7 @@ public:
     for (const auto& d: data.Access()) {
       out_ << d << delim_;
     }
-    return Data;
+    return data;
   }
 private:
   std::ostream& out_;

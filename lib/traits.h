@@ -4,7 +4,7 @@
 template <typename T, typename ...Args>
 struct SameCont {};
 
-template<class Alloc>
+template<typename Alloc>
 concept IsAllocator = requires(Alloc alloc, std::size_t n) {
   { *alloc.allocate(n) } -> std::same_as<typename Alloc::value_type&>;
   { alloc.deallocate(alloc.allocate(n), n) };  
@@ -23,6 +23,11 @@ struct ConvertParams<Alloc, OtherCont, U> {
   using Type = std::allocator_traits<Alloc>::template rebind_alloc<U>;
 };
 
+template <typename Alloc, template <typename, typename ...> typename OtherCont, typename U>
+concept ParamsConvertible = requires {
+  typename ConvertParams<Alloc, OtherCont, U>::Type;
+};
+
 template <template<typename, typename...> typename OtherCont, typename U>
 struct Traits {
   template <typename Head, typename ... Tail>
@@ -31,7 +36,7 @@ struct Traits {
   };
 
   template <typename T, template <typename, typename...> typename C, typename ...Head, typename Curr, typename ...Tail>
-  requires ConvertParams<Curr, OtherCont, U>::Type
+  requires ParamsConvertible<Curr, OtherCont, U>
   struct Convert<LazyPipeline<T, C, Head...>, Curr, Tail...> {
     using ConvertedCurr = typename ConvertParams<Curr, OtherCont, U>::Type;
     using NewHead = LazyPipeline<T, C, Head..., ConvertedCurr>;
@@ -39,11 +44,11 @@ struct Traits {
   };
 
   template <typename T, template <typename, typename...> typename C, typename ... Head, typename Curr, typename ...Tail>
-  requires !(ConvertParams<Curr, OtherCont, U>::Type)
-  struct Convert<LazyPipeline<T, C, Head..., >, Curr, Tail...> {
+  requires (!ParamsConvertible<Curr, OtherCont, U>)
+  struct Convert<LazyPipeline<T, C, Head...>, Curr, Tail...> {
     using Type = typename Convert<LazyPipeline<T, C, Head...>, Tail...>::Type;
   };
 
   template <typename ...Args>
-  using ToNewPipeline = typename Convert<LazyPipeline<U, OtherCont, Args...>::Type;
+  using ToNewPipeline = typename Convert<LazyPipeline<U, OtherCont, Args...>>::Type;
 };
