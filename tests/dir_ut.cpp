@@ -9,7 +9,7 @@ protected:
   std::filesystem::path main_dir;
   
   void SetUp() override {
-    main_dir = std::filesystem::temp_directory_path() / "main_dir";
+    main_dir = std::filesystem::temp_directory_path() / "dir_files";
     std::filesystem::create_directories(main_dir);
     std::filesystem::create_directories(main_dir / "sub_dir");
     
@@ -43,5 +43,5 @@ TEST_F(DirTest, filterByExtension) {
   auto result = Dir(main_dir, false) | Filter([](const std::filesystem::path& p) { return p.extension() == ".cpp"; }) | AsVector();
   
   ASSERT_EQ(result.size(), 1);
-  ASSERT_THAT(result, testing::UnorderedElementsAre("/tmp/main_dir/labwork100.cpp"));
+  ASSERT_THAT(result, testing::UnorderedElementsAre("/tmp/dir_files/labwork100.cpp"));
 }
