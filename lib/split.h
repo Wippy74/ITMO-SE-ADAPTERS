@@ -28,51 +28,44 @@ public:
 
   template <typename Data>
   requires std::convertible_to<typename Data::Type, std::string>
-  auto Apply(Data& flow) const {
+  auto Apply(Data& data) const {
     auto local_set = delim_set_;
-    return flow.template Make<std::string, Container, Args...>([local_set](auto& input, auto& output) {
+    return data.template Make<std::string, Container, Args...>([local_set](auto& input, auto& output) {
                                                               for (std::string& s : input) {
                                                                 size_t l = 0;
                                                                 for (size_t r = 0; r < s.size(); ++r) {
                                                                   if (local_set->IsDelimiter(s[r])) {
-                                                                    if (r > l) {
-                                                                      output.push_back(s.substr(l, r - l));
-                                                                    }
+                                                                    output.push_back(s.substr(l, r - l));
                                                                     l = r + 1;
                                                                   }
                                                                 }
-                                                                if (l < s.size()) {
-                                                                  output.push_back(s.substr(l));
-                                                                }
+                                                                output.push_back(s.substr(l));
                                                               } });
   }
 
   template <typename Data>
   requires std::derived_from<typename Data::Type, std::istream>
-  auto Apply(Data& flow) const {
+  auto Apply(Data& data) const {
     auto local_set = delim_set_;
-    return flow.template Make<std::string, Container, Args...>([local_set](auto& input, auto& output) {
+    return data.template Make<std::string, Container, Args...>([local_set](auto& input, auto& output) {
                                                               for (auto& stream : input) {
-                                                                  char buff[DelimSet::kSize];
-                                                                  std::string w;
-                                                                  while(stream) {
-                                                                    stream.read(buff, DelimSet::kSize);
-                                                                    std::streamsize count = stream.gcount();
-                                                                    for (std::streamsize i = 0; i < count; ++i) {
-                                                                      if (local_set->IsDelimiter(buff[i])) {
-                                                                          if (!w.empty()) {
-                                                                            output.push_back(std::move(w));
-                                                                            w.clear();
-                                                                          }
-                                                                      } else {
-                                                                        w += buff[i];
-                                                                      }
+                                                                char buff[DelimSet::kSize];
+                                                                std::string w;
+                                                                while(stream) {
+                                                                  stream.read(buff, DelimSet::kSize);
+                                                                  std::streamsize count = stream.gcount();
+                                                                  for (std::streamsize i = 0; i < count; ++i) {
+                                                                    if (local_set->IsDelimiter(buff[i])) {
+                                                                      output.push_back(std::move(w));
+                                                                      w.clear();
+                                                                    } else {
+                                                                      w += buff[i];
                                                                     }
                                                                   }
-                                                                  if (!w.empty()) {
-                                                                    output.push_back(std::move(w));
-                                                                  }
-                                                              } });
+                                                                }
+                                                                output.push_back(std::move(w));
+                                                              }
+                                                            });
   }
 };
 

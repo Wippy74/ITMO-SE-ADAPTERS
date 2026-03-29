@@ -120,7 +120,7 @@ public:
   }
 
   template <typename Adapt>
-  auto operator|(Adapt adapter) {
+  auto operator|(Adapt&& adapter) {
     return adapter.Apply(*this);
   }
 
