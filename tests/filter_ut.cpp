@@ -8,6 +8,14 @@
 #include <string>
 #include <vector>
 
+TEST(FilterTest, emptyResult) {
+  std::vector<int> input = {11, 23, 35, 76};
+
+  auto result = AsDataFlow(input) | Filter([](int x) { return x % 67 == 25; }) | AsVector();
+
+  ASSERT_TRUE(result.empty());
+}
+
 TEST(FilterTest, FilterEven) {
     std::vector<int> input = {1, 2, 3, 4, 5};
     auto result = AsDataFlow(input) | Filter([](int x) { return x % 2 == 0; }) | AsVector();

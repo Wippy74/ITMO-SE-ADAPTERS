@@ -38,3 +38,15 @@ TEST(SplitExpectedTest, SplitExpected) {
     ASSERT_EQ(unexpected_file.str(), "Department name contains space.Department name is empty.");
     ASSERT_THAT(expected_result, testing::ElementsAre(Department{"good-department"}, Department{"another-good-department"}));
 }
+
+// TEST(SplitExpectedTest, allSuccess) {
+//   std::vector<std::pair<int, int>> input = {{102, 2}, {120, 4}};
+  
+//   auto [errors, values] = AsDataFlow(input) | Transform([](std::pair<int, int> a) { return a.first / a.second; }) | SplitExpected();
+  
+//   auto error_result = errors | AsVector();
+//   auto value_result = values | AsVector();
+  
+//   ASSERT_TRUE(error_result.empty());
+//   ASSERT_THAT(value_result, testing::ElementsAre(51, 30));
+// }

@@ -16,6 +16,20 @@ struct Employee {
     bool operator==(const Employee& other) const = default;
 };
 
+TEST(AggregateByKeyTest, emptyInput) {
+    std::vector<std::string> input;
+    
+    auto result = AsDataFlow(input) 
+        | AggregateByKey(
+            size_t{0},
+            [](std::string&, size_t& count) { ++count; },
+            [](std::string& word) { return word; }
+        )
+        | AsVector();
+    
+    ASSERT_TRUE(result.empty());
+}
+
 TEST(AggregateByKeyTest, CountingAggregatedValues) {
     std::vector<std::string> input = {"name4", "name0", "name1", "name0", "name2", "name0", "name1"};
 

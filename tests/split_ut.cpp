@@ -21,3 +21,45 @@ TEST(ReadTest, BySpace) {
     auto result = AsDataFlow(files) | Split(" ") | AsVector();
     ASSERT_THAT(result, testing::ElementsAre("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"));
 }
+
+
+TEST(SplitTest, byComma) {
+  std::vector<std::string> input = {"abc,bcd,cde"};
+  
+  auto result = AsDataFlow(input) | Split(",")  | AsVector();
+  
+  ASSERT_THAT(result, testing::ElementsAre("abc", "bcd", "cde"));
+}
+
+TEST(SplitTest, byLetter) {
+  std::vector<std::string> input = {"abc,bcd,cde"};
+  
+  auto result = AsDataFlow(input) | Split("b") | AsVector();
+  
+  ASSERT_THAT(result, testing::ElementsAre("a", "c,", "cd,cde"));
+}
+
+TEST(SplitTest, multipleDelimiters) {
+  std::vector<std::string> input = {"ABC!DE F.HIJK;LMN,O"};
+  
+  auto result = AsDataFlow(input) | Split(" .!;,") | AsVector();
+  
+  ASSERT_THAT(result, testing::ElementsAre("ABC", "DE", "F", "HIJK", "LMN", "O"));
+}
+
+TEST(SplitTest, emptyTokens) {
+  std::vector<std::string> input = {"1||2"};
+  
+  auto result = AsDataFlow(input) | Split("|") | AsVector();
+  
+  ASSERT_THAT(result, testing::ElementsAre("1", "", "2"));
+}
+
+TEST(SplitTest, stringStream) {
+  std::vector<std::stringstream> streams(1);
+  streams[0] << "lab,work,eight";
+  
+  auto result = AsDataFlow(streams) | Split(",") | AsVector();
+  
+  ASSERT_THAT(result, testing::ElementsAre("lab", "work", "eight"));
+}

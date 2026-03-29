@@ -20,3 +20,19 @@ TEST(TransformTest, FromStringToInt) {
     auto result = AsDataFlow(files) | Split(" ") | Transform([](const std::string& str) { return std::stoi(str); }) | AsVector();
     ASSERT_THAT(result, testing::ElementsAre(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 }
+
+TEST(TransformTest, intToString) {
+  std::vector<int> input = {10, 20, 30};
+  
+  auto result = AsDataFlow(input) | Transform([](int x) { return std::to_string(x) + "a"; }) | AsVector();
+  
+  ASSERT_THAT(result, testing::ElementsAre("10a", "20a", "30a"));
+}
+
+TEST(TransformTest, compositionOfTransforms) {
+  std::vector<int> input = {4, 5, 6};
+  
+  auto result = AsDataFlow(input) | Transform([](int x) { return x + 2; }) | Transform([](int x) { return x * 5; })| AsVector();
+  
+  ASSERT_THAT(result, testing::ElementsAre(30, 35, 40));
+}
