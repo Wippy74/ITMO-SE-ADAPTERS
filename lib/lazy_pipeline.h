@@ -31,7 +31,9 @@ private:
 
     Data(const Func& func) : cont_ptr_(new Container{}), func_ptr_(std::make_unique<Func>(func)), IsOwner_(true) {}
 
-    Data(Container& c) : cont_ptr_(&c) {}
+    Data(Container& c) : cont_ptr_(&c), IsOwner_(false) {}
+
+    Data(const Container& c) : cont_ptr_(new Container(c)), IsOwner_(true) {}
 
     Data(Container&& c): cont_ptr_(new Container(std::move(c))) , IsOwner_(true) {}
 

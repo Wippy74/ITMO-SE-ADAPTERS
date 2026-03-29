@@ -3,10 +3,10 @@
 #include <string>
 #include <ostream>
 
-class WriteAdapt {
+class WriteAdapter {
 public:
-  WriteAdapt(std::ostream& out, const std::string& delim) : out_(out), delim_(delim) {};
-  WriteAdapt(std::ostream& out, char delim) : out_(out), delim_(std::string(1, delim)) {};
+  WriteAdapter(std::ostream& out, const std::string& delim) : out_(out), delim_(delim) {};
+  WriteAdapter(std::ostream& out, char delim) : out_(out), delim_(std::string(1, delim)) {};
   template <typename Data>
   Data Apply(Data& data) {
     for (const auto& d: data.Access()) {
@@ -21,5 +21,5 @@ private:
 
 template <typename Delimeter>
 auto Write(std::ostream& out, Delimeter delim) {
-  return WriteAdapt(out, delim);
+  return WriteAdapter(out, delim);
 }

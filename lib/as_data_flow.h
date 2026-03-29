@@ -5,12 +5,13 @@
 
 #include <utility>
 
-template <typename ValueType, template <typename, typename...> typename Container, typename... Args>
-auto AsDataFlow(Container<ValueType, Args...>& container) {
-  return LazyPipeline<ValueType, Container, Args...>(container);
+template <typename T, template <typename, typename...> typename Container, typename... Args>
+auto AsDataFlow(Container<T, Args...>& container) {
+  return LazyPipeline<T, Container, Args...>(container);
 }
 
-template <typename ValueType, template <typename, typename...> typename Container, typename... Args>
-auto AsDataFlow(const Container<ValueType, Args...>& container) {
-  return LazyPipeline<const ValueType, Container, Args...>(container);
+template <typename T, template <typename, typename...> typename Container, typename... Args>
+auto AsDataFlow(const Container<T, Args...>& container) {
+  Container<T, Args...> copy(container);
+  return LazyPipeline<T, Container, Args...>(std::move(copy));
 }

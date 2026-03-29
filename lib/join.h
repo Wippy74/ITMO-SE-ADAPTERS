@@ -21,7 +21,6 @@ struct JoinResult {
   bool operator==(const JoinResult& other) const = default;
 };
 
-
 template <template <typename, typename...> typename Container, typename... Args>
 struct TypeWrapper {};
 
