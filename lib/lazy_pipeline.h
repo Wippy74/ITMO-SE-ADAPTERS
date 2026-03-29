@@ -11,7 +11,7 @@ class LazyPipeline {
 private:
   class Data {
   private:
-    template <typename TValue2>
+    template <typename U>
 		struct ContainerType{
 			using Type = C<T, Args...>;
 		};
@@ -30,7 +30,13 @@ private:
     std::function<void()> parent_invoke = [](){};
 
     Data(const Func& func) : cont_ptr_(new Container{}), func_ptr_(std::make_unique<Func>(func)), IsOwner_(true) {}
+
     Data(Container& c) : cont_ptr_(&c) {}
+
+    Data(Container&& c): cont_ptr_(new Container(std::move(c))) , IsOwner_(true) {}
+
+    Data(Data&) = delete;
+
     ~Data() {
       if (IsOwner_) {
         delete cont_ptr_;
@@ -71,11 +77,15 @@ public:
 
   LazyPipeline() : LazyPipeline(Container{}) {}
 
-  LazyPipeline(const Data::Func& func) : data_(std::make_shared<Data>(func)) {}
+  LazyPipeline(const typename Data::Func& func) : data_(std::make_shared<Data>(func)) {}
 
   template <typename Cont>
   requires std::same_as<const Cont, Container>
   LazyPipeline(const Cont& c) : data_(std::make_shared<Data>(c)) {}
+
+  template <typename Cont>
+	requires std::same_as<std::remove_reference_t<Cont>, Container>
+	LazyPipeline(Cont&& c) : data_(std::make_shared<Data>(std::forward<Cont>(c))) {}
 
   template <typename U, template <typename, typename ...> typename C2, typename ...Args2>
   using Rebind = RebindingStruct<U, C2, Args2...>::Type;

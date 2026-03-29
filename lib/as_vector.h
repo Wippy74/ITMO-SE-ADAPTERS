@@ -2,16 +2,19 @@
 
 #include <vector>
 
-class AsVectorAdapt {
-  template <typename T, typename ... Args>
-  auto operator()() const {
-    return std::vector<T, Args ...>{};
-  };
-
+class AsVectorAdapter {
+public:
   template <typename Data>
-  auto operator()(Data& data) const {
-    return std::vector<typename std::decay_t<decltype(*data.begin())>{data.begin(), data.end()};
-  };
+  auto Apply(Data& data) const {
+    using ValueType = typename Data::Type;
+    std::vector<ValueType> result;
+    for (auto& item : data.Access()) {
+      result.push_back(item);
+    }
+    return result;
+  }
 };
 
-constexpr AsVectorAdapt AsVector;
+inline auto AsVector() {
+  return AsVectorAdapter{};
+}

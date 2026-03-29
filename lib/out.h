@@ -8,6 +8,6 @@ public:
   OutAdapt(std::ostream& out) : WriteAdapt(out, '\n') {}
 };
 
-OutAdapt Out(std::ostream& out) {
+inline OutAdapt Out(std::ostream& out) {
   return OutAdapt(out);
 }

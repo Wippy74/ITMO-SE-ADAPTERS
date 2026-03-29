@@ -7,10 +7,23 @@
 #include <optional>
 #include <vector>
 
-#include "traits.h"
+template <typename Key, typename Value>
+struct KV {
+	Key key;
+	Value value;
+  bool operator==(const KV& other) const = default;
+};
+
+template <typename Base, typename Joined>
+struct JoinResult {
+	Base base;
+	std::optional<Joined> joined;
+  bool operator==(const JoinResult& other) const = default;
+};
+
 
 template <template <typename, typename...> typename Container, typename... Args>
-struct Dummy {};
+struct TypeWrapper {};
 
 template <typename RightFlow,
           typename GetRightKey,
@@ -21,6 +34,7 @@ template <typename RightFlow,
           typename... Args>
 class JoinAdapter {
 public:
+  virtual ~JoinAdapter() = default;
   using RightKey = decltype(std::declval<GetRightKey>()(std::declval<typename RightFlow::Type>()));
   using RightValue = decltype(std::declval<GetRightValue>()(std::declval<typename RightFlow::Type>()));
 private:
@@ -56,12 +70,12 @@ public:
     template <typename LeftFlow>
     using Result = JoinResult<LeftValue<LeftFlow>, RightValue>;
 
-    JoinAdapter(Dummy<Container, Args...>,
+    JoinAdapter(TypeWrapper<Container, Args...>,
                 const RightFlow& right_flow,
                 GetRightKey get_right_key,
                 GetLeftKey get_left_key,
                 GetRightValue get_right_value,
-                GetLeftValue get_left_value, Container,)
+                GetLeftValue get_left_value)
       : right_data_ptr_(std::make_shared<RightData>(right_flow, get_right_key, get_right_value)),
       left_funcs_ptr_(std::make_shared<LeftFuncs>(get_left_key, get_left_value)) {}
 
@@ -99,7 +113,7 @@ public:
 
 template <template <typename, typename...> typename Container = SameCont, typename... Args, typename RightFlow>
 auto Join(RightFlow& right_flow) {
-  return JoinAdapter(Dummy<Container, Args...>(), right_flow,
+  return JoinAdapter(TypeWrapper<Container, Args...>(), right_flow,
     [](const auto& kv) { return kv.key; },
     [](const auto& kv) { return kv.key; },
     [](const auto& kv) { return kv.value; },
@@ -111,7 +125,7 @@ template <template <typename, typename...> typename Container = SameCont, typena
           typename GetLeftKey,
           typename GetRightKey>
 auto Join(RightFlow& right_flow, const GetLeftKey& get_left_key, const GetRightKey& get_right_key) {
-  return JoinAdapter(Dummy<Container, Args...>(), right_flow, get_right_key, get_left_key,
+  return JoinAdapter(TypeWrapper<Container, Args...>(), right_flow, get_right_key, get_left_key,
     [](const auto& v) { return v; },
     [](const auto& v) { return v; }
   );

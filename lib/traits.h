@@ -50,5 +50,5 @@ struct Traits {
   };
 
   template <typename ...Args>
-  using ToNewPipeline = typename Convert<LazyPipeline<U, OtherCont, Args...>>::Type;
+  using ToNewPipeline = typename Convert<LazyPipeline<U, OtherCont>, Args...>::Type;
 };
