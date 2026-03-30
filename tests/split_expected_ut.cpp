@@ -39,14 +39,41 @@ TEST(SplitExpectedTest, SplitExpected) {
     ASSERT_THAT(expected_result, testing::ElementsAre(Department{"good-department"}, Department{"another-good-department"}));
 }
 
-// TEST(SplitExpectedTest, allSuccess) {
-//   std::vector<std::pair<int, int>> input = {{102, 2}, {120, 4}};
+TEST(SplitExpectedTest, allSuccess) {
+  std::vector<std::pair<int, int>> input = {{102, 2}, {120, 4}};
   
-//   auto [errors, values] = AsDataFlow(input) | Transform([](std::pair<int, int> a) { return a.first / a.second; }) | SplitExpected();
+  auto [errors, values] = AsDataFlow(input) 
+      | Transform([](std::pair<int, int> p) -> std::expected<int, std::string> {
+          if (p.second == 0) {
+            return std::unexpected("Division by zero");
+          }
+          return p.first / p.second;
+      })
+      | SplitExpected();
   
-//   auto error_result = errors | AsVector();
-//   auto value_result = values | AsVector();
+  auto error_result = errors | AsVector();
+  auto value_result = values | AsVector();
   
-//   ASSERT_TRUE(error_result.empty());
-//   ASSERT_THAT(value_result, testing::ElementsAre(51, 30));
-// }
+  ASSERT_TRUE(error_result.empty());
+  ASSERT_THAT(value_result, testing::ElementsAre(51, 30));
+}
+
+
+TEST(SplitExpectedTest, allErrors) {
+  std::vector<std::pair<int, int>> input = {{102, 0}, {120, 0}};
+  
+  auto [errors, values] = AsDataFlow(input) 
+      | Transform([](std::pair<int, int> p) -> std::expected<int, std::string> {
+          if (p.second == 0) {
+            return std::unexpected("Division by zero");
+          }
+          return p.first / p.second;
+      })
+      | SplitExpected();
+  
+  auto error_result = errors | AsVector();
+  auto value_result = values | AsVector();
+  
+  ASSERT_THAT(error_result, testing::Each("Division by zero"));
+  ASSERT_TRUE(value_result.empty());
+}

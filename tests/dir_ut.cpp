@@ -3,45 +3,70 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <random>
+
 
 class DirTest : public ::testing::Test {
 protected:
-  std::filesystem::path main_dir;
+  std::filesystem::path test_dir_;
   
   void SetUp() override {
-    main_dir = std::filesystem::temp_directory_path() / "dir_files";
-    std::filesystem::create_directories(main_dir);
-    std::filesystem::create_directories(main_dir / "sub_dir");
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(10000, 99999);
     
-    std::ofstream(main_dir / "file1.txt") << "smth1";
-    std::ofstream(main_dir / "file2.txt") << "smth2";
-    std::ofstream(main_dir / "sub_dir" / "file67.txt") << "smth3";
+    test_dir_ = std::filesystem::temp_directory_path() / 
+                ("dir_test_" + std::to_string(dis(gen)));
+    std::error_code ec;
+    std::filesystem::remove_all(test_dir_, ec);
+    std::filesystem::create_directories(test_dir_);
   }
-  
+    
   void TearDown() override {
-    std::filesystem::remove_all(main_dir);
+    std::error_code ec;
+    std::filesystem::remove_all(test_dir_, ec);
+  }
+    
+  void CreateFile(const std::filesystem::path& relative_path, const std::string& content = "test") {
+    auto full_path = test_dir_ / relative_path;
+
+    if (full_path.has_parent_path()) {
+      std::filesystem::create_directories(full_path.parent_path());
+    }
+    
+    std::ofstream file(full_path);
+    file << content;
   }
 };
 
 TEST_F(DirTest, nonRecursive) {
-    auto result = Dir(main_dir, false) | Transform([](std::filesystem::path p) { return p.filename().string(); }) | AsVector();
-    
-    ASSERT_EQ(result.size(), 3u);
-    ASSERT_THAT(result, testing::UnorderedElementsAre("file1.txt", "file2.txt", "sub_dir"));
+  CreateFile("file1.txt");
+  CreateFile("file2.txt");
+  CreateFile("sub_dir/file67.txt");
+  auto result = Dir(test_dir_, false) | Transform([](std::filesystem::path p) { return p.filename().string(); }) | AsVector();
+  
+  ASSERT_EQ(result.size(), 3u);
+  ASSERT_THAT(result, testing::UnorderedElementsAre("file1.txt", "file2.txt", "sub_dir"));
 }
 
 TEST_F(DirTest, recursive) {
-  auto result = Dir(main_dir, true) | Transform([](std::filesystem::path p) { return p.filename().string(); }) | AsVector();
+  CreateFile("file1.txt");
+  CreateFile("file2.txt");
+  CreateFile("sub_dir/file67.txt");
+  auto result = Dir(test_dir_, true) | Transform([](std::filesystem::path p) { return p.filename().string(); }) | AsVector();
   
   ASSERT_EQ(result.size(), 4u);
   ASSERT_THAT(result, testing::UnorderedElementsAre("file1.txt", "file2.txt", "file67.txt", "sub_dir"));
 }
 
 TEST_F(DirTest, filterByExtension) {
-  std::ofstream(main_dir / "labwork100.cpp") << "cpp";
+  CreateFile("file1.txt");
+  CreateFile("file2.txt");
+  CreateFile("labwork100.cpp");
   
-  auto result = Dir(main_dir, false) | Filter([](const std::filesystem::path& p) { return p.extension() == ".cpp"; }) | AsVector();
+  auto result = Dir(test_dir_, false) | Filter([](const std::filesystem::path& p) { return p.extension() == ".cpp"; }) 
+      | Transform([](const std::filesystem::path& p) { return p.filename().string(); }) | AsVector();
   
   ASSERT_EQ(result.size(), 1);
-  ASSERT_THAT(result, testing::UnorderedElementsAre("/tmp/dir_files/labwork100.cpp"));
+  ASSERT_THAT(result, testing::UnorderedElementsAre("labwork100.cpp"));
 }
