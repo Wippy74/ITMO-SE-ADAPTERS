@@ -12,44 +12,19 @@ public:
     using ErrorType = typename ExpectedType::error_type;
     using GetterType = typename  std::function<typename Data::Container&()>;
 
-    struct SplitCache {
-      GetterType getter;
-      std::vector<ValueType> values;
-      std::vector<ErrorType> errors;
-      bool processed = false;
-      
-      explicit SplitCache(GetterType g) : getter(std::move(g)) {}
-      
-      void EnsureProcessed() {
-        if (processed) {
-          return;
-        }
-        processed = true;
-        for (auto& result : getter()) {
-          if (result.has_value()) {
-            values.push_back(std::move(result.value()));
-          } else {
-            errors.push_back(std::move(result.error()));
-          }
-        }
-      }
-    };
+    std::vector<ValueType> values;
+    std::vector<ErrorType> errors;
 
-    auto cache = std::make_shared<SplitCache>(data.State());
+    for (auto& result : data.Access()) {
+      if (result.has_value()) {
+        values.push_back(result.value());
+      } else {
+        errors.push_back(result.error());
+      }
+    }
 
-    auto error_stream = LazyPipeline<ErrorType, std::vector>(
-      [cache](std::vector<ErrorType>& output) {
-        cache->EnsureProcessed();
-        output = cache->errors;
-      }
-    );
-        
-    auto value_stream = LazyPipeline<ValueType, std::vector>(
-      [cache](std::vector<ValueType>& output) {
-        cache->EnsureProcessed();
-        output = cache->values;
-      }
-    );
+    auto error_stream = LazyPipeline<ErrorType, std::vector>(std::move(errors));
+    auto value_stream = LazyPipeline<ValueType, std::vector>(std::move(values));
     
     return std::pair{std::move(error_stream), std::move(value_stream)};
   }
