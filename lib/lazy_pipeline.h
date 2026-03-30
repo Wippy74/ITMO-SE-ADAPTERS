@@ -127,8 +127,8 @@ public:
   }
 
   std::function<Container&()> State() const {
-    auto& data_ptr = data_;
-    auto& parent_inv = data_ptr->parent_invoke;
+    auto data_ptr = data_;
+    auto parent_inv = data_ptr->parent_invoke;
     return [data_ptr, parent_inv]() -> Container&{
       parent_inv();
       return data_ptr->Access();
