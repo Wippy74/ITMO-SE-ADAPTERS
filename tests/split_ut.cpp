@@ -58,8 +58,38 @@ TEST(SplitTest, emptyTokens) {
 TEST(SplitTest, stringStream) {
   std::vector<std::stringstream> streams(1);
   streams[0] << "lab,work,eight";
-  
+
   auto result = AsDataFlow(streams) | Split(",") | AsVector();
-  
+
   ASSERT_THAT(result, testing::ElementsAre("lab", "work", "eight"));
+}
+
+TEST(SplitTest, delimiterAtStart) {
+  std::vector<std::string> input = {",abc,def"};
+  auto result = AsDataFlow(input) | Split(",") | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre("", "abc", "def"));
+}
+
+TEST(SplitTest, delimiterAtEnd) {
+  std::vector<std::string> input = {"abc,def,"};
+  auto result = AsDataFlow(input) | Split(",") | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre("abc", "def", ""));
+}
+
+TEST(SplitTest, noDelimiterInString) {
+  std::vector<std::string> input = {"hello"};
+  auto result = AsDataFlow(input) | Split(",") | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre("hello"));
+}
+
+TEST(SplitTest, emptyString) {
+  std::vector<std::string> input = {""};
+  auto result = AsDataFlow(input) | Split(",") | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre(""));
+}
+
+TEST(SplitTest, multipleStringsAccumulate) {
+  std::vector<std::string> input = {"a,b", "c,d", "e"};
+  auto result = AsDataFlow(input) | Split(",") | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre("a", "b", "c", "d", "e"));
 }

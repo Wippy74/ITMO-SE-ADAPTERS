@@ -63,10 +63,46 @@ TEST_F(DirTest, filterByExtension) {
   CreateFile("file1.txt");
   CreateFile("file2.txt");
   CreateFile("labwork100.cpp");
-  
-  auto result = Dir(test_dir_, false) | Filter([](const std::filesystem::path& p) { return p.extension() == ".cpp"; }) 
+
+  auto result = Dir(test_dir_, false) | Filter([](const std::filesystem::path& p) { return p.extension() == ".cpp"; })
       | Transform([](const std::filesystem::path& p) { return p.filename().string(); }) | AsVector();
-  
+
   ASSERT_EQ(result.size(), 1);
   ASSERT_THAT(result, testing::UnorderedElementsAre("labwork100.cpp"));
+}
+
+TEST_F(DirTest, emptyDirectory) {
+  auto result = Dir(test_dir_, false) | AsVector();
+  ASSERT_TRUE(result.empty());
+}
+
+TEST_F(DirTest, throwsOnNonDirectory) {
+  CreateFile("file.txt");
+  auto file_path = test_dir_ / "file.txt";
+  ASSERT_THROW(Dir(file_path, false), std::runtime_error);
+}
+
+TEST_F(DirTest, throwsOnNonExistentPath) {
+  ASSERT_THROW(Dir(test_dir_ / "nonexistent", false), std::runtime_error);
+}
+
+TEST_F(DirTest, recursiveCountsAllFiles) {
+  CreateFile("a.txt");
+  CreateFile("sub1/b.txt");
+  CreateFile("sub1/sub2/c.txt");
+
+  auto result = Dir(test_dir_, true)
+    | Filter([](const std::filesystem::path& p) { return std::filesystem::is_regular_file(p); })
+    | AsVector();
+
+  ASSERT_EQ(result.size(), 3u);
+}
+
+TEST_F(DirTest, directoryEntriesAreAbsolutePaths) {
+  CreateFile("file.txt");
+
+  auto result = Dir(test_dir_, false) | AsVector();
+
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(result[0].is_absolute());
 }

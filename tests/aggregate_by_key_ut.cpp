@@ -53,6 +53,39 @@ TEST(AggregateByKeyTest, CountingAggregatedValues) {
     );
 }
 
+TEST(AggregateByKeyTest, sumByKey) {
+  std::vector<std::pair<std::string, int>> input = {
+    {"a", 1}, {"b", 10}, {"a", 2}, {"b", 20}, {"a", 3}
+  };
+
+  auto result = AsDataFlow(input)
+    | AggregateByKey(
+        int{0},
+        [](const std::pair<std::string, int>& p, int& sum) { sum += p.second; },
+        [](const std::pair<std::string, int>& p) { return p.first; }
+    )
+    | AsVector();
+
+  ASSERT_THAT(result, testing::UnorderedElementsAre(
+    std::make_pair(std::string("a"), 6),
+    std::make_pair(std::string("b"), 30)
+  ));
+}
+
+TEST(AggregateByKeyTest, singleElementPerKey) {
+  std::vector<int> input = {3, 1, 4, 1, 5, 9, 2, 6};
+
+  auto result = AsDataFlow(input)
+    | AggregateByKey(
+        int{0},
+        [](const int& v, int& sum) { sum += v; },
+        [](const int& v) { return v % 3; }
+    )
+    | AsVector();
+
+  ASSERT_EQ(result.size(), 3u);
+}
+
 TEST(AggregateByKeyTest, AggregatingWithSeveralOutputsForEachKey) {
     std::vector<Employee> employees = {
         {3, "name1"},

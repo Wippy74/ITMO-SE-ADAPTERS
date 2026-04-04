@@ -84,3 +84,43 @@ TEST(SimpleTest, JoinComparators) {
         )
     );
 }
+
+TEST(JoinTest, emptyLeftFlow) {
+  std::vector<KV<int, std::string>> left;
+  std::vector<KV<int, std::string>> right = {{1, "x"}, {2, "y"}};
+
+  auto left_flow = AsDataFlow(left);
+  auto right_flow = AsDataFlow(right);
+
+  auto result = left_flow | Join(right_flow) | AsVector();
+
+  ASSERT_TRUE(result.empty());
+}
+
+TEST(JoinTest, multipleRightMatchesForSameKey) {
+  std::vector<KV<int, std::string>> left = {{1, "A"}};
+  std::vector<KV<int, std::string>> right = {{1, "X"}, {1, "Y"}};
+
+  auto left_flow = AsDataFlow(left);
+  auto right_flow = AsDataFlow(right);
+
+  auto result = left_flow | Join(right_flow) | AsVector();
+
+  ASSERT_EQ(result.size(), 2u);
+  ASSERT_EQ(result[0], (JoinResult<std::string, std::string>{"A", "X"}));
+  ASSERT_EQ(result[1], (JoinResult<std::string, std::string>{"A", "Y"}));
+}
+
+TEST(JoinTest, allLeftUnmatched) {
+  std::vector<KV<int, std::string>> left = {{10, "a"}, {20, "b"}};
+  std::vector<KV<int, std::string>> right = {{99, "z"}};
+
+  auto left_flow = AsDataFlow(left);
+  auto right_flow = AsDataFlow(right);
+
+  auto result = left_flow | Join(right_flow) | AsVector();
+
+  ASSERT_EQ(result.size(), 2u);
+  ASSERT_EQ(result[0].joined, std::nullopt);
+  ASSERT_EQ(result[1].joined, std::nullopt);
+}

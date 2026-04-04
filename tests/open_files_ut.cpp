@@ -56,10 +56,52 @@ TEST_F(OpenFilesTest, readFile) {
 
 TEST_F(OpenFilesTest, CombineWithSplit) {
   CreateFile("labwork8.txt", "dream,believe,makeithappen");
-  
+
   std::vector<std::filesystem::path> paths = {test_dir_ / "labwork8.txt"};
-  
+
   auto result = AsDataFlow(paths) | OpenFiles() | Split(",") | AsVector();
-  
+
   ASSERT_THAT(result, testing::ElementsAre("dream", "believe", "makeithappen"));
+}
+
+TEST_F(OpenFilesTest, readMultilineFile) {
+  CreateFile("multi.txt", "line1\nline2\nline3");
+
+  std::vector<std::filesystem::path> paths = {test_dir_ / "multi.txt"};
+  auto result = AsDataFlow(paths) | OpenFiles() | Split("\n") | AsVector();
+
+  ASSERT_THAT(result, testing::ElementsAre("line1", "line2", "line3"));
+}
+
+TEST_F(OpenFilesTest, readEmptyFile) {
+  CreateFile("empty.txt", "");
+
+  std::vector<std::filesystem::path> paths = {test_dir_ / "empty.txt"};
+  auto result = AsDataFlow(paths)
+    | OpenFiles()
+    | Transform([](std::ifstream& f) {
+        std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+        return content;
+    })
+    | AsVector();
+
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_EQ(result[0], "");
+}
+
+TEST_F(OpenFilesTest, filterFilesBeforeOpen) {
+  CreateFile("a.txt", "hello");
+  CreateFile("b.log", "world");
+
+  auto result = Dir(test_dir_, false)
+    | Filter([](const std::filesystem::path& p) { return p.extension() == ".txt"; })
+    | OpenFiles()
+    | Transform([](std::ifstream& f) {
+        std::string s;
+        std::getline(f, s);
+        return s;
+    })
+    | AsVector();
+
+  ASSERT_THAT(result, testing::ElementsAre("hello"));
 }

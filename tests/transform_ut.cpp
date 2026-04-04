@@ -31,8 +31,39 @@ TEST(TransformTest, intToString) {
 
 TEST(TransformTest, compositionOfTransforms) {
   std::vector<int> input = {4, 5, 6};
-  
+
   auto result = AsDataFlow(input) | Transform([](int x) { return x + 2; }) | Transform([](int x) { return x * 5; })| AsVector();
-  
+
   ASSERT_THAT(result, testing::ElementsAre(30, 35, 40));
+}
+
+TEST(TransformTest, emptyInput) {
+  std::vector<int> input;
+  auto result = AsDataFlow(input) | Transform([](int x) { return x * 2; }) | AsVector();
+  ASSERT_TRUE(result.empty());
+}
+
+TEST(TransformTest, identityTransform) {
+  std::vector<std::string> input = {"foo", "bar", "baz"};
+  auto result = AsDataFlow(input) | Transform([](const std::string& s) { return s; }) | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre("foo", "bar", "baz"));
+}
+
+TEST(TransformTest, pairConstruction) {
+  std::vector<int> input = {1, 2, 3};
+  auto result = AsDataFlow(input) | Transform([](int x) { return std::make_pair(x, x * x); }) | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre(
+    std::make_pair(1, 1),
+    std::make_pair(2, 4),
+    std::make_pair(3, 9)
+  ));
+}
+
+TEST(TransformTest, transformAfterFilter) {
+  std::vector<int> input = {1, 2, 3, 4, 5, 6};
+  auto result = AsDataFlow(input)
+    | Filter([](int x) { return x % 2 == 0; })
+    | Transform([](int x) { return x * 10; })
+    | AsVector();
+  ASSERT_THAT(result, testing::ElementsAre(20, 40, 60));
 }
