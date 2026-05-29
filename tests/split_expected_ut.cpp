@@ -38,3 +38,84 @@ TEST(SplitExpectedTest, SplitExpected) {
     ASSERT_EQ(unexpected_file.str(), "Department name contains space.Department name is empty.");
     ASSERT_THAT(expected_result, testing::ElementsAre(Department{"good-department"}, Department{"another-good-department"}));
 }
+
+TEST(SplitExpectedTest, allSuccess) {
+  std::vector<std::pair<int, int>> input = {{102, 2}, {120, 4}};
+  
+  auto [errors, values] = AsDataFlow(input) 
+      | Transform([](std::pair<int, int> p) -> std::expected<int, std::string> {
+          if (p.second == 0) {
+            return std::unexpected("Division by zero");
+          }
+          return p.first / p.second;
+      })
+      | SplitExpected();
+  
+  auto error_result = errors | AsVector();
+  auto value_result = values | AsVector();
+  
+  ASSERT_TRUE(error_result.empty());
+  ASSERT_THAT(value_result, testing::ElementsAre(51, 30));
+}
+
+
+TEST(SplitExpectedTest, allErrors) {
+  std::vector<std::pair<int, int>> input = {{102, 0}, {120, 0}};
+
+  auto [errors, values] = AsDataFlow(input)
+      | Transform([](std::pair<int, int> p) -> std::expected<int, std::string> {
+          if (p.second == 0) {
+            return std::unexpected("Division by zero");
+          }
+          return p.first / p.second;
+      })
+      | SplitExpected();
+
+  auto error_result = errors | AsVector();
+  auto value_result = values | AsVector();
+
+  ASSERT_THAT(error_result, testing::Each("Division by zero"));
+  ASSERT_TRUE(value_result.empty());
+}
+
+TEST(SplitExpectedTest, mixedResults) {
+  std::vector<int> input = {-2, -1, 0, 1, 2};
+
+  auto [errors, values] = AsDataFlow(input)
+      | Transform([](int x) -> std::expected<int, std::string> {
+          if (x < 0) return std::unexpected("negative");
+          return x * 10;
+      })
+      | SplitExpected();
+
+  auto error_result = errors | AsVector();
+  auto value_result = values | AsVector();
+
+  ASSERT_THAT(error_result, testing::ElementsAre("negative", "negative"));
+  ASSERT_THAT(value_result, testing::ElementsAre(0, 10, 20));
+}
+
+TEST(SplitExpectedTest, emptyInput) {
+  std::vector<int> input;
+
+  auto [errors, values] = AsDataFlow(input)
+      | Transform([](int x) -> std::expected<int, std::string> { return x; })
+      | SplitExpected();
+
+  ASSERT_TRUE((errors | AsVector()).empty());
+  ASSERT_TRUE((values | AsVector()).empty());
+}
+
+TEST(SplitExpectedTest, singleSuccess) {
+  std::vector<std::string> input = {"valid"};
+
+  auto [errors, values] = AsDataFlow(input)
+      | Transform(ParseDepartment)
+      | SplitExpected();
+
+  auto value_result = values | AsVector();
+  auto error_result = errors | AsVector();
+
+  ASSERT_TRUE(error_result.empty());
+  ASSERT_THAT(value_result, testing::ElementsAre(Department{"valid"}));
+}

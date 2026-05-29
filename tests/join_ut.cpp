@@ -22,6 +22,21 @@ struct Group {
     bool operator==(const Group& other) const = default;
 };
 
+TEST(JoinTest, emptyRightFlow) {
+  std::vector<KV<int, std::string>> left = {{1, "Seva"}, {2, "Artem"}, {3, "Ilya"}};
+  std::vector<KV<int, std::string>> right;
+
+  auto left_flow = AsDataFlow(left);
+  auto right_flow = AsDataFlow(right);
+  
+  auto result = left_flow | Join(right_flow) | AsVector();
+  
+  ASSERT_EQ(result.size(), 3);
+  ASSERT_EQ(result[0].joined, std::nullopt);
+  ASSERT_EQ(result[1].joined, std::nullopt);
+  ASSERT_EQ(result[1].joined, std::nullopt);
+}
+
 TEST(SimpleTest, JoinKV) {
     std::vector<KV<int, std::string>> left = {{0, "a"}, {1, "b"}, {2, "c"}, {3, "d"}, {1, "e"}};
     std::vector<KV<int, std::string>> right = {{0, "f"}, {1, "g"}, {3, "i"}};
@@ -68,4 +83,44 @@ TEST(SimpleTest, JoinComparators) {
             JoinResult<Student, Group>{Student{1, "e"}, Group{1, "g"}}
         )
     );
+}
+
+TEST(JoinTest, emptyLeftFlow) {
+  std::vector<KV<int, std::string>> left;
+  std::vector<KV<int, std::string>> right = {{1, "x"}, {2, "y"}};
+
+  auto left_flow = AsDataFlow(left);
+  auto right_flow = AsDataFlow(right);
+
+  auto result = left_flow | Join(right_flow) | AsVector();
+
+  ASSERT_TRUE(result.empty());
+}
+
+TEST(JoinTest, multipleRightMatchesForSameKey) {
+  std::vector<KV<int, std::string>> left = {{1, "A"}};
+  std::vector<KV<int, std::string>> right = {{1, "X"}, {1, "Y"}};
+
+  auto left_flow = AsDataFlow(left);
+  auto right_flow = AsDataFlow(right);
+
+  auto result = left_flow | Join(right_flow) | AsVector();
+
+  ASSERT_EQ(result.size(), 2u);
+  ASSERT_EQ(result[0], (JoinResult<std::string, std::string>{"A", "X"}));
+  ASSERT_EQ(result[1], (JoinResult<std::string, std::string>{"A", "Y"}));
+}
+
+TEST(JoinTest, allLeftUnmatched) {
+  std::vector<KV<int, std::string>> left = {{10, "a"}, {20, "b"}};
+  std::vector<KV<int, std::string>> right = {{99, "z"}};
+
+  auto left_flow = AsDataFlow(left);
+  auto right_flow = AsDataFlow(right);
+
+  auto result = left_flow | Join(right_flow) | AsVector();
+
+  ASSERT_EQ(result.size(), 2u);
+  ASSERT_EQ(result[0].joined, std::nullopt);
+  ASSERT_EQ(result[1].joined, std::nullopt);
 }

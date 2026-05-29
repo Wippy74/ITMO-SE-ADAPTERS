@@ -16,6 +16,20 @@ struct Employee {
     bool operator==(const Employee& other) const = default;
 };
 
+TEST(AggregateByKeyTest, emptyInput) {
+    std::vector<std::string> input;
+    
+    auto result = AsDataFlow(input) 
+        | AggregateByKey(
+            size_t{0},
+            [](std::string&, size_t& count) { ++count; },
+            [](std::string& word) { return word; }
+        )
+        | AsVector();
+    
+    ASSERT_TRUE(result.empty());
+}
+
 TEST(AggregateByKeyTest, CountingAggregatedValues) {
     std::vector<std::string> input = {"name4", "name0", "name1", "name0", "name2", "name0", "name1"};
 
@@ -37,6 +51,39 @@ TEST(AggregateByKeyTest, CountingAggregatedValues) {
             std::make_pair("name2", 1)
         )
     );
+}
+
+TEST(AggregateByKeyTest, sumByKey) {
+  std::vector<std::pair<std::string, int>> input = {
+    {"a", 1}, {"b", 10}, {"a", 2}, {"b", 20}, {"a", 3}
+  };
+
+  auto result = AsDataFlow(input)
+    | AggregateByKey(
+        int{0},
+        [](const std::pair<std::string, int>& p, int& sum) { sum += p.second; },
+        [](const std::pair<std::string, int>& p) { return p.first; }
+    )
+    | AsVector();
+
+  ASSERT_THAT(result, testing::UnorderedElementsAre(
+    std::make_pair(std::string("a"), 6),
+    std::make_pair(std::string("b"), 30)
+  ));
+}
+
+TEST(AggregateByKeyTest, singleElementPerKey) {
+  std::vector<int> input = {3, 1, 4, 1, 5, 9, 2, 6};
+
+  auto result = AsDataFlow(input)
+    | AggregateByKey(
+        int{0},
+        [](const int& v, int& sum) { sum += v; },
+        [](const int& v) { return v % 3; }
+    )
+    | AsVector();
+
+  ASSERT_EQ(result.size(), 3u);
 }
 
 TEST(AggregateByKeyTest, AggregatingWithSeveralOutputsForEachKey) {

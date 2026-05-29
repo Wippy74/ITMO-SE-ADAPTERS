@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <processing.h>
+#include "../lib/processing.h"
 
 /*
 Программа считает частоту слов, встречающихся во всех файлах в директории 
@@ -8,10 +8,9 @@
 */
 
 int main(int argc, char **argv) {
-  if(agrc != 2)
+  if(argc != 2) {
     return 1;
-  
-
+  }
   bool recursive = false;
   Dir(argv[1], recursive) 
     | Filter([](std::filesystem::path& p){ return p.extension() == ".txt"; })
@@ -29,7 +28,5 @@ int main(int argc, char **argv) {
       )
     | Transform([](const std::pair<std::string, size_t>& stat) { return std::format("{} - {}", stat.first, stat.second);})
     | Out(std::cout);
-
-  
   return 0;
 }
